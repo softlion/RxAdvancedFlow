@@ -8,15 +8,15 @@ namespace RxAdvancedFlow.internals.publisher
     {
         readonly ISubscriber<T> actual;
 
-        readonly Action<T> onDrop;
+        readonly Action<T>? onDrop;
 
         long requested;
 
-        ISubscription s;
+        ISubscription? s;
 
         bool done;
 
-        public PublisherOnBackpressureDrop(ISubscriber<T> actual, Action<T> onDrop)
+        public PublisherOnBackpressureDrop(ISubscriber<T> actual, Action<T>? onDrop)
         {
             this.actual = actual;
             this.onDrop = onDrop;
@@ -24,7 +24,7 @@ namespace RxAdvancedFlow.internals.publisher
 
         public void Cancel()
         {
-            s.Cancel();
+            s?.Cancel();
         }
 
         public void OnComplete()
@@ -70,20 +70,19 @@ namespace RxAdvancedFlow.internals.publisher
                 catch (Exception e)
                 {
                     done = true;
-                    s.Cancel();
+                    s?.Cancel();
 
                     actual.OnError(e);
                 }
             }
         }
 
-        public void OnSubscribe(ISubscription s)
+        public void OnSubscribe(ISubscription su)
         {
-            if (OnSubscribeHelper.SetSubscription(ref this.s, s))
+            if (OnSubscribeHelper.SetSubscription(ref s, su))
             {
                 actual.OnSubscribe(this);
-
-                s.Request(long.MaxValue);
+                su.Request(long.MaxValue);
             }
         }
 

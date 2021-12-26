@@ -9,14 +9,14 @@ namespace RxAdvancedFlow.internals.publisher
     {
         readonly ISubscriber<T> actual;
 
-        ISubscription s;
+        ISubscription? s;
 
         SpscLinkedArrayQueueStruct<T> q;
 
         BasicBackpressureStruct bp;
 
         bool done;
-        Exception error;
+        Exception? error;
 
         public PublisherOnBackpressureBufferAll(ISubscriber<T> actual, int bufferSize)
         {
@@ -27,7 +27,7 @@ namespace RxAdvancedFlow.internals.publisher
         public void Cancel()
         {
             bp.Cancel();
-            s.Cancel();
+            s?.Cancel();
         }
 
         public void OnComplete()
@@ -49,13 +49,13 @@ namespace RxAdvancedFlow.internals.publisher
             Drain();
         }
 
-        public void OnSubscribe(ISubscription s)
+        public void OnSubscribe(ISubscription su)
         {
-            if (OnSubscribeHelper.SetSubscription(ref this.s, s))
+            if (OnSubscribeHelper.SetSubscription(ref s, su))
             {
                 actual.OnSubscribe(this);
 
-                s.Request(long.MaxValue);
+                su.Request(long.MaxValue);
             }
         }
 
@@ -140,7 +140,7 @@ namespace RxAdvancedFlow.internals.publisher
 
             if (d && empty)
             {
-                Exception e = error;
+                var e = error;
                 if (e != null)
                 {
                     a.OnError(e);
@@ -160,20 +160,20 @@ namespace RxAdvancedFlow.internals.publisher
     {
         readonly ISubscriber<T> actual;
 
-        readonly Action onOverflow;
+        readonly Action? onOverflow;
 
-        ISubscription s;
+        ISubscription? s;
 
         SpscArrayQueueStruct<T> q;
 
         BasicBackpressureStruct bp;
 
         bool done;
-        Exception error;
+        Exception? error;
 
         bool doneOverflow;
 
-        public PublisherOnBackpressureBufferFixed(ISubscriber<T> actual, int bufferSize, Action onOverflow)
+        public PublisherOnBackpressureBufferFixed(ISubscriber<T> actual, int bufferSize, Action? onOverflow)
         {
             this.actual = actual;
             this.onOverflow = onOverflow;
@@ -183,7 +183,7 @@ namespace RxAdvancedFlow.internals.publisher
         public void Cancel()
         {
             bp.Cancel();
-            s.Cancel();
+            s?.Cancel();
         }
 
         public void OnComplete()
@@ -221,9 +221,9 @@ namespace RxAdvancedFlow.internals.publisher
             {
                 doneOverflow = true;
 
-                s.Cancel();
+                s?.Cancel();
 
-                Exception e = BackpressureHelper.MissingBackpressureException();
+                var e = BackpressureHelper.MissingBackpressureException();
 
                 try
                 {
@@ -240,13 +240,13 @@ namespace RxAdvancedFlow.internals.publisher
             Drain();
         }
 
-        public void OnSubscribe(ISubscription s)
+        public void OnSubscribe(ISubscription su)
         {
-            if (OnSubscribeHelper.SetSubscription(ref this.s, s))
+            if (OnSubscribeHelper.SetSubscription(ref s, su))
             {
                 actual.OnSubscribe(this);
 
-                s.Request(long.MaxValue);
+                su.Request(long.MaxValue);
             }
         }
 
@@ -331,7 +331,7 @@ namespace RxAdvancedFlow.internals.publisher
 
             if (d && empty)
             {
-                Exception e = error;
+                var e = error;
                 if (e != null)
                 {
                     a.OnError(e);

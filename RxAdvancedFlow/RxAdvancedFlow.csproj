@@ -1,263 +1,47 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{686B27B3-9301-419F-B2C1-2666484A93C7}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RxAdvancedFlow</RootNamespace>
-    <AssemblyName>RxAdvancedFlow</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+
+  <ItemGroup>
+    <PackageReference Include="Reactive.Streams" version="1.0.2" />
+  </ItemGroup>
+
+  <!--  nuget configurable properties -->
+  <PropertyGroup>
+    <Version>0.0.0-pre1</Version>
+    <VersionSuffix></VersionSuffix>
+    <DefineConstants>$(DefineConstants);</DefineConstants>
+    <NugetPackageId></NugetPackageId>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\RxAdvancedFlow.xml</DocumentationFile>
+
+  <!--  nuget properties -->
+  <PropertyGroup>
+    <PackageId>Softlion.RxAdvancedFlow</PackageId>
+    <!-- PackageIcon>icon.png</PackageIcon -->
+    <!--<PackageIconUrl>https://raw.githubusercontent.com/xamarin/Essentials/master/Assets/xamarin.essentials_128x128.png</PackageIconUrl>-->
+    <Summary>Back pressure operators for reactivex</Summary>
+    <PackageTags>backpressure, back, pressure, reactive, reactivex</PackageTags>
+    <Title>Back pressure operators for reactivex</Title>
+    <Description>Back pressure operators for reactivex</Description>
+    <Product>$(AssemblyName) ($(TargetFramework))</Product>
+    <PackageVersion>$(Version)$(VersionSuffix)</PackageVersion>
+    <Authors>softlion, akarnokd, and many others</Authors>
+    <Owners>Benjamin Mayrargue</Owners>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Copyright></Copyright>
+    <RepositoryUrl>https://github.com/softlion/RxAdvancedFlow</RepositoryUrl>
+    <UseFullSemVerForNuGet>false</UseFullSemVerForNuGet>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://github.com/softlion/RxAdvancedFlow</PackageProjectUrl>
+    <PackageReleaseNotes>
+      
+    </PackageReleaseNotes>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Reactive.Streams, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Reactive.Streams.1.0.1\lib\net40\Reactive.Streams.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="BackpressureStrategy.cs" />
-    <Compile Include="Completable.cs" />
-    <Compile Include="DefaultScheduler.cs" />
-    <Compile Include="disposables\ICompositeDisposable.cs" />
-    <Compile Include="disposables\ISoloDisposable.cs" />
-    <Compile Include="disposables\MultipleAssignmentDisposable.cs" />
-    <Compile Include="disposables\ListCompositeDisposable.cs" />
-    <Compile Include="disposables\SerialDisposable.cs" />
-    <Compile Include="Flowable.cs" />
-    <Compile Include="IConnectablePublisher.cs" />
-    <Compile Include="IGroupedPublisher.cs" />
-    <Compile Include="RsExtras.cs" />
-    <Compile Include="internals\BackpressureHelper.cs" />
-    <Compile Include="internals\BasicBackpressureStruct.cs" />
-    <Compile Include="internals\completable\AmbCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\CallbackCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\CompletableAndThenObservable.cs" />
-    <Compile Include="internals\completable\CompletableAndThenPublisher.cs" />
-    <Compile Include="internals\completable\CompletableAndThenSingle.cs" />
-    <Compile Include="internals\completable\CompletableDelaySubscription.cs" />
-    <Compile Include="internals\completable\CompletableFromAction.cs" />
-    <Compile Include="internals\completable\CompletableLift.cs" />
-    <Compile Include="internals\completable\CompletablePublisher.cs" />
-    <Compile Include="internals\completable\CompletableObservable.cs" />
-    <Compile Include="internals\completable\CompletableSubscriberToObserver.cs" />
-    <Compile Include="internals\completable\ConcatCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\DelayCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\MergeCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\ObserveOnCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\ObserverToCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\OnErrorCompleteCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\ResumeCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\RetryIfCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\RetryInfiniteCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\RetryFiniteCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\SingleSubscriberToCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\SubscribeOnCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\SubscriberToCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\TimeoutCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\ToSingleCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\UnsubscribeOnCompletableSubscriber.cs" />
-    <Compile Include="internals\completable\UsingCompletableSubscriber.cs" />
-    <Compile Include="internals\disposables\ActionDisposable.cs" />
-    <Compile Include="internals\disposables\ActionWeakDisposable.cs" />
-    <Compile Include="internals\disposables\DisposableHelper.cs" />
-    <Compile Include="internals\disposables\DisposableSubscription.cs" />
-    <Compile Include="disposables\SetCompositeDisposable.cs" />
-    <Compile Include="internals\disposables\EmptyDisposable.cs" />
-    <Compile Include="internals\disposables\VersionedSoloDisposable.cs" />
-    <Compile Include="internals\ExceptionHelper.cs" />
-    <Compile Include="internals\InfiniteRepeat.cs" />
-    <Compile Include="internals\LambdaHelper.cs" />
-    <Compile Include="internals\ObservableFromFunc.cs" />
-    <Compile Include="internals\OnSubscribeHelper.cs" />
-    <Compile Include="internals\completable\LambdaCompletableSubscriber.cs" />
-    <Compile Include="internals\PaddedLong.cs" />
-    <Compile Include="internals\ProcessorHelper.cs" />
-    <Compile Include="internals\publisher\PublisherAutoConnect.cs" />
-    <Compile Include="internals\publisher\PublisherOnBackpressureDrop.cs" />
-    <Compile Include="internals\publisher\PublisherAny.cs" />
-    <Compile Include="internals\publisher\PublisherAll.cs" />
-    <Compile Include="internals\publisher\PublisherAmb.cs" />
-    <Compile Include="internals\publisher\PublisherBuffer.cs" />
-    <Compile Include="internals\publisher\PublisherCache.cs" />
-    <Compile Include="internals\publisher\PublisherConcatMapEager.cs" />
-    <Compile Include="internals\publisher\PublisherDebounce.cs" />
-    <Compile Include="internals\publisher\PublisherDefaultIfEmpty.cs" />
-    <Compile Include="internals\publisher\PublisherDelay.cs" />
-    <Compile Include="internals\publisher\PublisherDelaySubscription.cs" />
-    <Compile Include="internals\publisher\PublisherDematerialize.cs" />
-    <Compile Include="internals\publisher\PublisherDistinct.cs" />
-    <Compile Include="internals\publisher\PublisherDistinctUntilChanged.cs" />
-    <Compile Include="internals\publisher\PublisherElementAt.cs" />
-    <Compile Include="internals\publisher\PublisherFilter.cs" />
-    <Compile Include="internals\publisher\PublisherGroupBy.cs" />
-    <Compile Include="internals\publisher\PublisherIgnoreElements.cs" />
-    <Compile Include="internals\publisher\PublisherIsEmpty.cs" />
-    <Compile Include="internals\publisher\PublisherCount.cs" />
-    <Compile Include="internals\publisher\PublisherMapNotification.cs" />
-    <Compile Include="internals\publisher\PublisherMaterialize.cs" />
-    <Compile Include="internals\publisher\PublisherObserveOn.cs" />
-    <Compile Include="internals\publisher\PublisherOnBackpressureBuffer.cs" />
-    <Compile Include="internals\publisher\PublisherOnBackpressureError.cs" />
-    <Compile Include="internals\publisher\PublisherOnBackpressureLatest.cs" />
-    <Compile Include="internals\publisher\PublisherOnErrorResumeNext.cs" />
-    <Compile Include="internals\publisher\PublisherOnErrorReturn.cs" />
-    <Compile Include="internals\publisher\PublisherPeek.cs" />
-    <Compile Include="internals\publisher\PublisherPublish.cs" />
-    <Compile Include="internals\publisher\PublisherRedoConditional.cs" />
-    <Compile Include="internals\publisher\PublisherRetry.cs" />
-    <Compile Include="internals\publisher\PublisherRedo.cs" />
-    <Compile Include="internals\publisher\PublisherReduce.cs" />
-    <Compile Include="internals\publisher\PublisherCollect.cs" />
-    <Compile Include="internals\publisher\PublisherCombineLatest.cs" />
-    <Compile Include="internals\publisher\PublisherConcatMap.cs" />
-    <Compile Include="internals\publisher\PublisherConcatEnumerable.cs" />
-    <Compile Include="internals\publisher\PublisherEmpty.cs" />
-    <Compile Include="internals\publisher\PublisherFromAction.cs" />
-    <Compile Include="internals\publisher\PublisherFromEnumerable.cs" />
-    <Compile Include="internals\publisher\PublisherFromArray.cs" />
-    <Compile Include="internals\publisher\PublisherInterval.cs" />
-    <Compile Include="internals\publisher\PublisherLift.cs" />
-    <Compile Include="internals\publisher\PublisherMap.cs" />
-    <Compile Include="internals\publisher\PublisherFlatMap.cs" />
-    <Compile Include="internals\publisher\PublisherNever.cs" />
-    <Compile Include="internals\publisher\PublisherRange.cs" />
-    <Compile Include="internals\publisher\PublisherRedoWhen.cs" />
-    <Compile Include="internals\publisher\PublisherRefCount.cs" />
-    <Compile Include="internals\publisher\PublisherReplay.cs" />
-    <Compile Include="internals\publisher\PublisherSample.cs" />
-    <Compile Include="internals\publisher\PublisherScan.cs" />
-    <Compile Include="internals\publisher\PublisherSequenceEqual.cs" />
-    <Compile Include="internals\publisher\PublisherSingle.cs" />
-    <Compile Include="internals\publisher\PublisherSkip.cs" />
-    <Compile Include="internals\publisher\PublisherSkipLast.cs" />
-    <Compile Include="internals\publisher\PublisherSubscribeOn.cs" />
-    <Compile Include="internals\publisher\PublisherSwitchIfEmpty.cs" />
-    <Compile Include="internals\publisher\PublisherTakeWhile.cs" />
-    <Compile Include="internals\publisher\PublisherSkipWhile.cs" />
-    <Compile Include="internals\publisher\PublisherSwitchMap.cs" />
-    <Compile Include="internals\publisher\PublisherTake.cs" />
-    <Compile Include="internals\publisher\PublisherTakeLast.cs" />
-    <Compile Include="internals\publisher\PublisherSkipUntil.cs" />
-    <Compile Include="internals\publisher\PublisherTakeUntil.cs" />
-    <Compile Include="internals\publisher\PublisherThrottleFirst.cs" />
-    <Compile Include="internals\publisher\PublisherTimeout.cs" />
-    <Compile Include="internals\publisher\PublisherTimer.cs" />
-    <Compile Include="internals\publisher\PublisherToEnumerable.cs" />
-    <Compile Include="internals\publisher\PublisherUnsubscribeOn.cs" />
-    <Compile Include="internals\publisher\PublisherUsing.cs" />
-    <Compile Include="internals\publisher\PublisherWindow.cs" />
-    <Compile Include="internals\publisher\PublisherWindowTimed.cs" />
-    <Compile Include="internals\publisher\PublisherWithLatestFrom.cs" />
-    <Compile Include="internals\publisher\PublisherZip.cs" />
-    <Compile Include="internals\queues\ArrayQueue.cs" />
-    <Compile Include="internals\queues\IQueue.cs" />
-    <Compile Include="internals\queues\MpscLinkedQueue.cs" />
-    <Compile Include="internals\queues\MpscStructLinkedQueue.cs" />
-    <Compile Include="internals\queues\QueueHelper.cs" />
-    <Compile Include="internals\queues\SpscArrayQueue.cs" />
-    <Compile Include="internals\queues\SpscLinkedArrayQueue.cs" />
-    <Compile Include="internals\queues\SpscArrayQueueStruct.cs" />
-    <Compile Include="internals\queues\SpscLinkedArrayQueueStruct.cs" />
-    <Compile Include="internals\ScalarSource.cs" />
-    <Compile Include="internals\schedulers\ScheduledAction.cs" />
-    <Compile Include="internals\single\AmbSingleSubscriber.cs" />
-    <Compile Include="internals\single\DelaySingeSubscriber.cs" />
-    <Compile Include="internals\single\DelaySubscriptionByPublisherSingleSubscriber.cs" />
-    <Compile Include="internals\single\DelaySubscriptionByObservableSingleSubscriber.cs" />
-    <Compile Include="internals\single\FlatMapSingleSubscriber.cs" />
-    <Compile Include="internals\single\LambdaSingleSubscriber.cs" />
-    <Compile Include="internals\single\LifecycleSingleSubscriber.cs" />
-    <Compile Include="internals\single\MapSingleSubscriber.cs" />
-    <Compile Include="internals\single\ObserveOnSingleSubscriber.cs" />
-    <Compile Include="internals\single\OnErrorReturnSingleSubscriber.cs" />
-    <Compile Include="internals\single\ResumeNextSingleSubscriber.cs" />
-    <Compile Include="internals\single\RetryFiniteSingleSubscriber.cs" />
-    <Compile Include="internals\single\RetryIfSingleSubscriber.cs" />
-    <Compile Include="internals\single\RetryInfiniteSingleSubscriber.cs" />
-    <Compile Include="internals\single\SingleCache.cs" />
-    <Compile Include="internals\single\SingleFromPublisher.cs" />
-    <Compile Include="internals\single\SingleSubscriberWrapper.cs" />
-    <Compile Include="internals\single\TimeoutSingleSubscriber.cs" />
-    <Compile Include="internals\single\UnsubscribeOnSingleSubscriber.cs" />
-    <Compile Include="internals\single\UsingSingleSubscriber.cs" />
-    <Compile Include="internals\single\ZipSingleSubscriber.cs" />
-    <Compile Include="internals\single\EqualsSingleSubscriber.cs" />
-    <Compile Include="internals\single\SubscriberToSingleSubscriber.cs" />
-    <Compile Include="internals\single\ObserverToSingleSubscriber.cs" />
-    <Compile Include="internals\single\SingleFromAction.cs" />
-    <Compile Include="internals\single\SingleLift.cs" />
-    <Compile Include="internals\single\SingleToObservable.cs" />
-    <Compile Include="internals\subscribers\CancelledSubscriber.cs" />
-    <Compile Include="internals\subscribers\EmptySubscriber.cs" />
-    <Compile Include="internals\subscribers\HalfSerializedSubscriberStruct.cs" />
-    <Compile Include="internals\subscribers\LockedSerializedSubscriberStruct.cs" />
-    <Compile Include="internals\subscribers\ResourceSubscriber.cs" />
-    <Compile Include="internals\subscribers\SubscriberObserver.cs" />
-    <Compile Include="internals\subscriptions\MultiArbiterStruct.cs" />
-    <Compile Include="internals\subscriptions\SingleArbiterStruct.cs" />
-    <Compile Include="internals\subscriptions\SubscriptionHelper.cs" />
-    <Compile Include="internals\subscriptions\EmptySubscription.cs" />
-    <Compile Include="processors\PublishProcessor.cs" />
-    <Compile Include="processors\SingleProcessor.cs" />
-    <Compile Include="processors\UnicastProcessor.cs" />
-    <Compile Include="Signal.cs" />
-    <Compile Include="subscribers\LambdaSubscriber.cs" />
-    <Compile Include="subscribers\LatchedSingleSubscriber.cs" />
-    <Compile Include="subscribers\LockedSerializedSubscriber.cs" />
-    <Compile Include="subscribers\ObserverSubscriber.cs" />
-    <Compile Include="subscribers\TestSubscriber.cs" />
-    <Compile Include="subscriptions\ScalarDelayedSubscription.cs" />
-    <Compile Include="subscriptions\ScalarDelayedSubscriptionStruct.cs" />
-    <Compile Include="subscriptions\ScalarSubscription.cs" />
-    <Compile Include="subscriptions\SingleSubscriptionArbiter.cs" />
-    <Compile Include="IScheduler.cs" />
-    <Compile Include="processors\CompletableProcessor.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RxAdvancedFlowPlugins.cs" />
-    <Compile Include="Single.cs" />
-    <Compile Include="subscribers\AbstractCompletableSubscriber.cs" />
-    <Compile Include="subscribers\LatchedCompletableSubscriber.cs" />
-    <Compile Include="Timed.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+  
 </Project>

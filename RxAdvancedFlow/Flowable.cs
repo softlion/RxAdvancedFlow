@@ -24,72 +24,36 @@ namespace RxAdvancedFlow
 
         static int GetSettingsBufferSize()
         {
-            string s = Environment.GetEnvironmentVariable("rxaf.buffer-size");
+            var s = Environment.GetEnvironmentVariable("rxaf.buffer-size");
+            return int.TryParse(s, out var i) ? Math.Max(1, i) : 128;
+        }
 
-            int i;
+        public static IPublisher<T> Create<T>(Action<ISubscriber<T>> onSubscribe) 
+            => new PublisherFromAction<T>(onSubscribe);
 
-            if (int.TryParse(s, out i))
+        public static IPublisher<R> Lift<T, R>(this IPublisher<T> source, Func<ISubscriber<R>, ISubscriber<T>> onLift) 
+            => new PublisherLift<T, R>(source, onLift);
+
+        public static R To<T, R>(this IPublisher<T> source, Func<IPublisher<T>, R> converter) 
+            => converter(source);
+
+        public static IPublisher<R> Compose<T, R>(this IPublisher<T> source, Func<IPublisher<T>, IPublisher<R>> composer) 
+            => To(source, composer);
+
+        public static ICompletable ToCompletable<T>(this IPublisher<T> source) 
+            => Completable.Create(cs =>
             {
-                return Math.Max(1, i);
-            }
-
-            return 128;
-        }
-
-        public static IPublisher<T> Create<T>(Action<ISubscriber<T>> onSubscribe)
-        {
-            return new PublisherFromAction<T>(onSubscribe);
-        }
-
-        public static IPublisher<R> Lift<T, R>(this IPublisher<T> source, Func<ISubscriber<R>, ISubscriber<T>> onLift)
-        {
-            return new PublisherLift<T, R>(source, onLift);
-        }
-
-        public static R To<T, R>(this IPublisher<T> source, Func<IPublisher<T>, R> converter)
-        {
-            return converter(source);
-        }
-
-        public static IPublisher<R> Compose<T, R>(this IPublisher<T> source, Func<IPublisher<T>, IPublisher<R>> composer)
-        {
-            return To(source, composer);
-        }
-
-        public static ICompletable ToCompletable<T>(this IPublisher<T> source)
-        {
-            return Completable.Create(cs =>
-            {
-                SubscriberToCompletableSubscriber<T> stcs = new SubscriberToCompletableSubscriber<T>(cs);
-
+                var stcs = new SubscriberToCompletableSubscriber<T>(cs);
                 source.Subscribe(stcs);
             });
-        }
 
-        public static ICompletable AndThen<T>(this IPublisher<T> source, ICompletable other)
-        {
-            return source.ToCompletable().AndThen(other);
-        }
+        public static ICompletable AndThen<T>(this IPublisher<T> source, ICompletable other) 
+            => source.ToCompletable().AndThen(other);
 
-        public static IPublisher<T> Just<T>(T value)
-        {
-            return new ScalarSource<T>(value);
-        }
-
-        public static IPublisher<T> Empty<T>()
-        {
-            return PublisherEmpty<T>.Instance;
-        }
-
-        public static IPublisher<T> Never<T>()
-        {
-            return PublisherNever<T>.Instance;
-        }
-
-        public static IPublisher<T> Throw<T>(Exception error)
-        {
-            return Throw<T>(() => error);
-        }
+        public static IPublisher<T> Just<T>(T value) => new ScalarSource<T>(value);
+        public static IPublisher<T> Empty<T>() => PublisherEmpty<T>.Instance;
+        public static IPublisher<T> Never<T>() => PublisherNever<T>.Instance;
+        public static IPublisher<T> Throw<T>(Exception error) => Throw<T>(() => error);
 
         public static IPublisher<T> Throw<T>(Func<Exception> errorSupplier)
         {
@@ -114,28 +78,16 @@ namespace RxAdvancedFlow
 
         public static IPublisher<T> AmbArray<T>(params IPublisher<T>[] sources)
         {
-            int n = sources.Length;
-            if (n == 0)
+            var n = sources.Length;
+            return n switch
             {
-                return Empty<T>();
-            }
-            if (n == 1)
-            {
-                return sources[0];
-            }
-
-            return Create<T>(s =>
-            {
-                PublisherAmb<T> ambc = new PublisherAmb<T>(s, n);
-
-                ambc.Subscribe(sources, n);
-            });
+                0 => Empty<T>(),
+                1 => sources[0],
+                _ => Create<T>(s => new PublisherAmb<T>(s, n).Subscribe(sources, n))
+            };
         }
 
-        public static IPublisher<T> Amb<T>(this IPublisher<T>[] sources)
-        {
-            return AmbArray(sources);
-        }
+        public static IPublisher<T> Amb<T>(this IPublisher<T>[] sources) => AmbArray(sources);
 
         static T[] ToArray<T>(IEnumerable<T> ie, out int n)
         {
@@ -161,48 +113,38 @@ namespace RxAdvancedFlow
         {
             return Create<T>(s =>
             {
-                int n;
-                IPublisher<T>[] a = ToArray(sources, out n);
+                var a = ToArray(sources, out var n);
 
-                if (n == 0)
+                switch (n)
                 {
-                    EmptySubscription.Complete(s);
-                    return;
+                    case 0:
+                        EmptySubscription.Complete(s);
+                        return;
+                    case 1:
+                        a[0].Subscribe(s);
+                        return;
+                    default:
+                    {
+                        new PublisherAmb<T>(s, n).Subscribe(a, n);
+                        break;
+                    }
                 }
-                else
-                if (n == 1)
-                {
-                    a[0].Subscribe(s);
-                    return;
-                }
-
-                PublisherAmb<T> ambc = new PublisherAmb<T>(s, n);
-
-                ambc.Subscribe(a, n);
             });
         }
 
-        public static int BufferSize()
-        {
-            return DefaultBufferSize;
-        }
+        public static int BufferSize() => DefaultBufferSize;
 
-        public static IPublisher<R> CombineLatest<T, R>(this IPublisher<T>[] sources, Func<T[], R> combiner)
-        {
-            return CombineLatest(sources, combiner, BufferSize());
-        }
+        public static IPublisher<R> CombineLatest<T, R>(this IPublisher<T>[] sources, Func<T[], R> combiner) 
+            => CombineLatest(sources, combiner, BufferSize());
 
-        public static IPublisher<R> CombineLatest<T, R>(this IEnumerable<IPublisher<T>> sources, Func<T[], R> combiner)
-        {
-            return CombineLatest(sources, combiner, BufferSize());
-        }
+        public static IPublisher<R> CombineLatest<T, R>(this IEnumerable<IPublisher<T>> sources, Func<T[], R> combiner) 
+            => CombineLatest(sources, combiner, BufferSize());
 
         public static IPublisher<R> CombineLatest<T, R>(this IPublisher<T>[] sources, Func<T[], R> combiner, int bufferSize)
         {
             return Create<R>(s =>
             {
-                PublisherCombineLatest<T, R> pcc = new PublisherCombineLatest<T, R>(s, combiner, bufferSize);
-
+                var pcc = new PublisherCombineLatest<T, R>(s, combiner, bufferSize);
                 pcc.Subscribe(sources, sources.Length);
             });
         }
@@ -211,105 +153,105 @@ namespace RxAdvancedFlow
         {
             return Create<R>(s =>
             {
-                int n;
-                IPublisher<T>[] a = ToArray(sources, out n);
+                IPublisher<T>[] a = ToArray(sources, out var n);
 
-                if (n == 0)
+                switch (n)
                 {
-                    EmptySubscription.Complete(s);
-                    return;
+                    case 0:
+                        EmptySubscription.Complete(s);
+                        return;
+                    case 1:
+                        a[0].Map(v => combiner(new T[] { v })).Subscribe(s);
+                        return;
+                    default:
+                    {
+                        var pcc = new PublisherCombineLatest<T, R>(s, combiner, bufferSize);
+                        pcc.Subscribe(a, n);
+                        break;
+                    }
                 }
-                if (n == 1)
-                {
-                    a[0].Map(v => combiner(new T[] { v })).Subscribe(s);
-                    return;
-                }
-
-                PublisherCombineLatest<T, R> pcc = new PublisherCombineLatest<T, R>(s, combiner, bufferSize);
-
-                pcc.Subscribe(a, n);
             });
         }
 
-        public static IPublisher<R> CombineLatest<T1, T2, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            Func<T1, T2, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3,
-            Func<T1, T2, T3, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, T4, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T4> s4,
-            Func<T1, T2, T3, T4, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T4> s4,
-            IPublisher<T5> s5,
-            Func<T1, T2, T3, T4, T5, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T4> s4,
-            IPublisher<T5> s5, IPublisher<T6> s6,
-            Func<T1, T2, T3, T4, T5, T6, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, T7, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T4> s4,
-            IPublisher<T5> s5, IPublisher<T6> s6,
-            IPublisher<T7> s7,
-            Func<T1, T2, T3, T4, T5, T6, T7, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, T7, T8, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T4> s4,
-            IPublisher<T5> s5, IPublisher<T6> s6,
-            IPublisher<T7> s7, IPublisher<T8> s8,
-            Func<T1, T2, T3, T4, T5, T6, T7, T8, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T4> s4,
-            IPublisher<T5> s5, IPublisher<T6> s6,
-            IPublisher<T7> s7, IPublisher<T8> s8,
-            IPublisher<T9> s9,
-            Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> combiner)
-        {
-            // TODO requires custom implementation of PublisherCombineLatest
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<R> CombineLatest<T1, T2, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     Func<T1, T2, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3,
+        //     Func<T1, T2, T3, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, T4, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T4> s4,
+        //     Func<T1, T2, T3, T4, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T4> s4,
+        //     IPublisher<T5> s5,
+        //     Func<T1, T2, T3, T4, T5, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T4> s4,
+        //     IPublisher<T5> s5, IPublisher<T6> s6,
+        //     Func<T1, T2, T3, T4, T5, T6, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, T7, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T4> s4,
+        //     IPublisher<T5> s5, IPublisher<T6> s6,
+        //     IPublisher<T7> s7,
+        //     Func<T1, T2, T3, T4, T5, T6, T7, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, T7, T8, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T4> s4,
+        //     IPublisher<T5> s5, IPublisher<T6> s6,
+        //     IPublisher<T7> s7, IPublisher<T8> s8,
+        //     Func<T1, T2, T3, T4, T5, T6, T7, T8, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> CombineLatest<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T4> s4,
+        //     IPublisher<T5> s5, IPublisher<T6> s6,
+        //     IPublisher<T7> s7, IPublisher<T8> s8,
+        //     IPublisher<T9> s9,
+        //     Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> combiner)
+        // {
+        //     // TODO requires custom implementation of PublisherCombineLatest
+        //     throw new NotImplementedException();
+        // }
 
         public static IPublisher<T> Concat<T>(this IPublisher<T>[] sources)
         {
@@ -492,10 +434,8 @@ namespace RxAdvancedFlow
         {
             return Create<long>(s =>
             {
-                PublisherInterval pi = new PublisherInterval(s);
-
+                var pi = new PublisherInterval(s);
                 s.OnSubscribe(pi);
-
                 pi.SetTimer(scheduler.SchedulePeriodicallyDirect(pi.Run, initialDelay, period));
             });
         }
@@ -790,78 +730,78 @@ namespace RxAdvancedFlow
             return Zip(source, other, zipper);
         }
 
-        public static IPublisher<R> Zip<T1, T2, T3, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3,
-            Func<T1, T2, T3, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> Zip<T1, T2, T3, T4, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T2> s4,
-            Func<T1, T2, T3, T4, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> Zip<T1, T2, T3, T4, T5, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T2> s4,
-            IPublisher<T5> s5,
-            Func<T1, T2, T3, T4, T5, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T2> s4,
-            IPublisher<T5> s5, IPublisher<T2> s6,
-            Func<T1, T2, T3, T4, T5, T6, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, T7, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T2> s4,
-            IPublisher<T5> s5, IPublisher<T2> s6,
-            IPublisher<T7> s7,
-            Func<T1, T2, T3, T4, T5, T6, T7, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
-
-
-        public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, T7, T8, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T2> s4,
-            IPublisher<T5> s5, IPublisher<T2> s6,
-            IPublisher<T7> s7, IPublisher<T2> s8,
-            Func<T1, T2, T3, T4, T5, T6, T7, T8, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(
-            IPublisher<T1> s1, IPublisher<T2> s2,
-            IPublisher<T3> s3, IPublisher<T2> s4,
-            IPublisher<T5> s5, IPublisher<T2> s6,
-            IPublisher<T7> s7, IPublisher<T2> s8,
-            IPublisher<T9> s9,
-            Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> zipper)
-        {
-            // TODO requires custom implementation of PublisherZip
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<R> Zip<T1, T2, T3, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3,
+        //     Func<T1, T2, T3, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> Zip<T1, T2, T3, T4, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T2> s4,
+        //     Func<T1, T2, T3, T4, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> Zip<T1, T2, T3, T4, T5, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T2> s4,
+        //     IPublisher<T5> s5,
+        //     Func<T1, T2, T3, T4, T5, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T2> s4,
+        //     IPublisher<T5> s5, IPublisher<T2> s6,
+        //     Func<T1, T2, T3, T4, T5, T6, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, T7, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T2> s4,
+        //     IPublisher<T5> s5, IPublisher<T2> s6,
+        //     IPublisher<T7> s7,
+        //     Func<T1, T2, T3, T4, T5, T6, T7, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
+        //
+        //
+        // public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, T7, T8, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T2> s4,
+        //     IPublisher<T5> s5, IPublisher<T2> s6,
+        //     IPublisher<T7> s7, IPublisher<T2> s8,
+        //     Func<T1, T2, T3, T4, T5, T6, T7, T8, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> Zip<T1, T2, T3, T4, T5, T6, T7, T8, T9, R>(
+        //     IPublisher<T1> s1, IPublisher<T2> s2,
+        //     IPublisher<T3> s3, IPublisher<T2> s4,
+        //     IPublisher<T5> s5, IPublisher<T2> s6,
+        //     IPublisher<T7> s7, IPublisher<T2> s8,
+        //     IPublisher<T9> s9,
+        //     Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> zipper)
+        // {
+        //     // TODO requires custom implementation of PublisherZip
+        //     throw new NotImplementedException();
+        // }
 
         public static IPublisher<bool> All<T>(this IPublisher<T> source, Func<T, bool> predicate)
         {
@@ -1217,68 +1157,68 @@ namespace RxAdvancedFlow
             });
         }
 
-        public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source, TimeSpan timespan)
-        {
-            return Buffer(source, timespan, timespan, DefaultScheduler.Instance, () => new List<T>());
-        }
+        // public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source, TimeSpan timespan)
+        // {
+        //     return Buffer(source, timespan, timespan, DefaultScheduler.Instance, () => new List<T>());
+        // }
+        //
+        // public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source, TimeSpan timespan, IScheduler scheduler)
+        // {
+        //     return Buffer(source, timespan, timespan, scheduler, () => new List<T>());
+        // }
 
-        public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source, TimeSpan timespan, IScheduler scheduler)
-        {
-            return Buffer(source, timespan, timespan, scheduler, () => new List<T>());
-        }
+        // public static IPublisher<C> Buffer<T, C>(this IPublisher<T> source, TimeSpan timespan,
+        //     TimeSpan timeskip, IScheduler scheduler, Func<C> bufferFactory) where C : ICollection<T>
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
 
-        public static IPublisher<C> Buffer<T, C>(this IPublisher<T> source, TimeSpan timespan,
-            TimeSpan timeskip, IScheduler scheduler, Func<C> bufferFactory) where C : ICollection<T>
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<IList<T>> Buffer<T, U>(this IPublisher<T> source, IPublisher<U> boundary)
+        // {
+        //     return Buffer(source, boundary, () => new List<T>());
+        // }
+        //
+        // public static IPublisher<C> Buffer<T, U, C>(this IPublisher<T> source, IPublisher<U> boundary, Func<C> bufferFactory) where C : ICollection<T>
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
 
-        public static IPublisher<IList<T>> Buffer<T, U>(this IPublisher<T> source, IPublisher<U> boundary)
-        {
-            return Buffer(source, boundary, () => new List<T>());
-        }
+        // public static IPublisher<IList<T>> Buffer<T, U, V>(this IPublisher<T> source, IPublisher<U> bufferStart, Func<U, IPublisher<V>> bufferEnd)
+        // {
+        //     return Buffer(source, bufferStart, bufferEnd, () => new List<T>());
+        // }
 
-        public static IPublisher<C> Buffer<T, U, C>(this IPublisher<T> source, IPublisher<U> boundary, Func<C> bufferFactory) where C : ICollection<T>
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<C> Buffer<T, U, V, C>(this IPublisher<T> source, IPublisher<U> bufferStart, Func<U, IPublisher<V>> bufferEnd, Func<C> bufferFactory) where C : ICollection<T>
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
 
-        public static IPublisher<IList<T>> Buffer<T, U, V>(this IPublisher<T> source, IPublisher<U> bufferStart, Func<U, IPublisher<V>> bufferEnd)
-        {
-            return Buffer(source, bufferStart, bufferEnd, () => new List<T>());
-        }
+        // public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source,
+        //     TimeSpan timespan, int size, bool restartTimer = false)
+        // {
+        //     return Buffer(source, timespan, DefaultScheduler.Instance, size, () => new List<T>(), restartTimer);
+        // }
+        //
+        // public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source,
+        //     TimeSpan timespan, IScheduler scheduler, int size, bool restartTimer = false)
+        // {
+        //     return Buffer(source, timespan, scheduler, size, () => new List<T>(), restartTimer);
+        // }
+        //
+        // public static IPublisher<C> Buffer<T, C>(this IPublisher<T> source,
+        //     TimeSpan timespan, int size, Func<C> bufferFactory, bool restartTimer = false) where C : ICollection<T>
+        // {
+        //     return Buffer(source, timespan, DefaultScheduler.Instance, size, bufferFactory, restartTimer);
+        // }
 
-        public static IPublisher<C> Buffer<T, U, V, C>(this IPublisher<T> source, IPublisher<U> bufferStart, Func<U, IPublisher<V>> bufferEnd, Func<C> bufferFactory) where C : ICollection<T>
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source,
-            TimeSpan timespan, int size, bool restartTimer = false)
-        {
-            return Buffer(source, timespan, DefaultScheduler.Instance, size, () => new List<T>(), restartTimer);
-        }
-
-        public static IPublisher<IList<T>> Buffer<T>(this IPublisher<T> source,
-            TimeSpan timespan, IScheduler scheduler, int size, bool restartTimer = false)
-        {
-            return Buffer(source, timespan, scheduler, size, () => new List<T>(), restartTimer);
-        }
-
-        public static IPublisher<C> Buffer<T, C>(this IPublisher<T> source,
-            TimeSpan timespan, int size, Func<C> bufferFactory, bool restartTimer = false) where C : ICollection<T>
-        {
-            return Buffer(source, timespan, DefaultScheduler.Instance, size, bufferFactory, restartTimer);
-        }
-
-        public static IPublisher<C> Buffer<T, C>(this IPublisher<T> source, TimeSpan timespan, IScheduler scheduler, int size, Func<C> bufferFactory, bool restartTimer = false) where C : ICollection<T>
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<C> Buffer<T, C>(this IPublisher<T> source, TimeSpan timespan, IScheduler scheduler, int size, Func<C> bufferFactory, bool restartTimer = false) where C : ICollection<T>
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
 
         public static IPublisher<T> Cache<T>(this IPublisher<T> source)
         {
@@ -1414,13 +1354,13 @@ namespace RxAdvancedFlow
         }
 
         public static IPublisher<T> Peek<T>(this IPublisher<T> source,
-            Action<ISubscription> onSubscribeCall = null,
-            Action<T> onNextCall = null,
-            Action<Exception> onErrorCall = null,
-            Action onCompleteCall = null,
-            Action onAfterTerminateCall = null,
-            Action<long> onRequestCall = null,
-            Action onCancelCall = null
+            Action<ISubscription>? onSubscribeCall = null,
+            Action<T>? onNextCall = null,
+            Action<Exception>? onErrorCall = null,
+            Action? onCompleteCall = null,
+            Action? onAfterTerminateCall = null,
+            Action<long>? onRequestCall = null,
+            Action? onCancelCall = null
         )
         {
             return Create<T>(s =>
@@ -1724,7 +1664,7 @@ namespace RxAdvancedFlow
             });
         }
 
-        public static IPublisher<T> OnBackpressureBuffer<T>(this IPublisher<T> source, int maxCapacity, Action onOverflow = null)
+        public static IPublisher<T> OnBackpressureBuffer<T>(this IPublisher<T> source, int maxCapacity, Action? onOverflow = null)
         {
             return Create<T>(s =>
             {
@@ -1732,7 +1672,7 @@ namespace RxAdvancedFlow
             });
         }
 
-        public static IPublisher<T> OnBackpressureDrop<T>(this IPublisher<T> source, Action<T> onDrop = null)
+        public static IPublisher<T> OnBackpressureDrop<T>(this IPublisher<T> source, Action<T>? onDrop = null)
         {
             return Create<T>(s =>
             {
@@ -2666,51 +2606,51 @@ namespace RxAdvancedFlow
             });
         }
 
-        public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
-            TimeSpan timespan, int size, bool restartTimer = false)
-        {
-            return Window(source, timespan, DefaultScheduler.Instance, size, restartTimer);
-        }
+        // public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
+        //     TimeSpan timespan, int size, bool restartTimer = false)
+        // {
+        //     return Window(source, timespan, DefaultScheduler.Instance, size, restartTimer);
+        // }
 
-        public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
-            TimeSpan timespan, IScheduler scheduler, int size, bool restartTimer = false)
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
+        //     TimeSpan timespan, IScheduler scheduler, int size, bool restartTimer = false)
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
 
-        public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
-            TimeSpan timespan, TimeSpan timeskip, int size, bool restartTimer = false)
-        {
-            return Window(source, timespan, timeskip, DefaultScheduler.Instance, size, restartTimer);
-        }
+        // public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
+        //     TimeSpan timespan, TimeSpan timeskip, int size, bool restartTimer = false)
+        // {
+        //     return Window(source, timespan, timeskip, DefaultScheduler.Instance, size, restartTimer);
+        // }
 
-        public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
-            TimeSpan timespan, TimeSpan timeskip, IScheduler scheduler, 
-            int size, bool restartTimer = false)
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<IPublisher<T>> Window<T, B>(this IPublisher<T> source, 
-            IPublisher<B> boundary)
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<IPublisher<T>> Window<T, O, C>(this IPublisher<T> source, 
-            IPublisher<O> openings, Func<O, IPublisher<C>> closings)
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
-
-        public static IPublisher<R> ZipWith<T, U, R>(this IPublisher<T> source, IEnumerable<U> other, Func<T, U, R> zipper)
-        {
-            // TODO implement
-            throw new NotImplementedException();
-        }
+        // public static IPublisher<IPublisher<T>> Window<T>(this IPublisher<T> source, 
+        //     TimeSpan timespan, TimeSpan timeskip, IScheduler scheduler, 
+        //     int size, bool restartTimer = false)
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<IPublisher<T>> Window<T, B>(this IPublisher<T> source, 
+        //     IPublisher<B> boundary)
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<IPublisher<T>> Window<T, O, C>(this IPublisher<T> source, 
+        //     IPublisher<O> openings, Func<O, IPublisher<C>> closings)
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
+        //
+        // public static IPublisher<R> ZipWith<T, U, R>(this IPublisher<T> source, IEnumerable<U> other, Func<T, U, R> zipper)
+        // {
+        //     // TODO implement
+        //     throw new NotImplementedException();
+        // }
     }
 }

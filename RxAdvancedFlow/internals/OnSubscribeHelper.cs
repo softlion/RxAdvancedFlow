@@ -64,7 +64,7 @@ namespace RxAdvancedFlow.internals
         /// <param name="d"></param>
         /// <param name="v"></param>
         /// <returns></returns>
-        public static bool SetSubscription(ref ISubscription d, ISubscription v)
+        public static bool SetSubscription(ref ISubscription? d, ISubscription? v)
         {
             if (v == null)
             {

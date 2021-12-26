@@ -20,7 +20,7 @@ namespace RxAdvancedFlow.internals.disposables
         /// <param name="d">The target field to swap with the common disposed instance</param>
         public static bool Terminate(ref IDisposable d)
         {
-            IDisposable a = Volatile.Read(ref d);
+            var a = Volatile.Read(ref d);
             if (a != Disposed)
             {
                 a = Interlocked.Exchange(ref d, Disposed);
@@ -51,11 +51,11 @@ namespace RxAdvancedFlow.internals.disposables
         /// <param name="d"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static bool Set(ref IDisposable d, IDisposable value)
+        public static bool Set(ref IDisposable d, IDisposable? value)
         {
             for (;;)
             {
-                IDisposable a = Volatile.Read(ref d);
+                var a = Volatile.Read(ref d);
                 if (a == Disposed)
                 {
                     value?.Dispose();
@@ -82,7 +82,7 @@ namespace RxAdvancedFlow.internals.disposables
         {
             for (;;)
             {
-                IDisposable a = Volatile.Read(ref d);
+                var a = Volatile.Read(ref d);
                 if (a == Disposed)
                 {
                     value?.Dispose();

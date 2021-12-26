@@ -7,30 +7,30 @@ namespace RxAdvancedFlow.internals.publisher
     {
         readonly ISubscriber<T> actual;
 
-        readonly Action<ISubscription> onSubscribeCall;
+        readonly Action<ISubscription>? onSubscribeCall;
 
-        readonly Action<T> onNextCall;
+        readonly Action<T>? onNextCall;
 
-        readonly Action<Exception> onErrorCall;
+        readonly Action<Exception>? onErrorCall;
 
-        readonly Action onCompleteCall;
+        readonly Action? onCompleteCall;
 
-        readonly Action onAfterTerminateCall;
+        readonly Action? onAfterTerminateCall;
 
-        readonly Action<long> onRequestCall;
+        readonly Action<long>? onRequestCall;
 
-        readonly Action onCancelCall;
+        readonly Action? onCancelCall;
 
-        ISubscription s;
+        ISubscription? s;
 
         public PublisherPeek(ISubscriber<T> actual,
-            Action<ISubscription> onSubscribeCall,
-            Action<T> onNextCall,
-            Action<Exception> onErrorCall,
-            Action onCompleteCall,
-            Action onAfterTerminateCall,
-            Action<long> onRequestCall,
-            Action onCancelCall
+            Action<ISubscription>? onSubscribeCall,
+            Action<T>? onNextCall,
+            Action<Exception>? onErrorCall,
+            Action? onCompleteCall,
+            Action? onAfterTerminateCall,
+            Action<long>? onRequestCall,
+            Action? onCancelCall
             )
         {
             this.actual = actual;
@@ -54,7 +54,7 @@ namespace RxAdvancedFlow.internals.publisher
                 RxAdvancedFlowPlugins.OnError(e);
             }
 
-            s.Cancel();
+            s?.Cancel();
         }
 
         public void OnComplete()
@@ -118,18 +118,18 @@ namespace RxAdvancedFlow.internals.publisher
             actual.OnNext(t);
         }
 
-        public void OnSubscribe(ISubscription s)
+        public void OnSubscribe(ISubscription su)
         {
             try
             {
-                onSubscribeCall?.Invoke(s);
+                onSubscribeCall?.Invoke(su);
             }
             catch (Exception e)
             {
                 RxAdvancedFlowPlugins.OnError(e);
             }
 
-            if (OnSubscribeHelper.SetSubscription(ref this.s, s))
+            if (OnSubscribeHelper.SetSubscription(ref s, su))
             {
                 actual.OnSubscribe(this);
             }
@@ -146,7 +146,7 @@ namespace RxAdvancedFlow.internals.publisher
                 RxAdvancedFlowPlugins.OnError(e);
             }
 
-            s.Request(n);
+            s?.Request(n);
         }
     }
 }

@@ -14,17 +14,17 @@ namespace RxAdvancedFlow.internals.publisher
 
         readonly TimeSpan time;
 
-        readonly IPublisher<T> other;
+        readonly IPublisher<T>? other;
 
         MultiArbiterStruct arbiter;
 
-        IDisposable d;
+        IDisposable? d;
 
         long sharedIndex;
 
         long localIndex;
 
-        public PublisherTimeout(ISubscriber<T> actual, IWorker worker, TimeSpan time, IPublisher<T> other)
+        public PublisherTimeout(ISubscriber<T> actual, IWorker worker, TimeSpan time, IPublisher<T>? other)
         {
             this.actual = actual;
             this.worker = worker;
@@ -76,7 +76,7 @@ namespace RxAdvancedFlow.internals.publisher
         {
             d?.Dispose();
 
-            long idx = Interlocked.Increment(ref sharedIndex);
+            var idx = Interlocked.Increment(ref sharedIndex);
 
             if (idx != localIndex)
             {
@@ -117,19 +117,13 @@ namespace RxAdvancedFlow.internals.publisher
         }
 
         public void OnSubscribe(ISubscription s)
-        {
-            arbiter.Set(s);
-        }
+            => arbiter.Set(s);
 
         public void Request(long n)
-        {
-            arbiter.Request(n);
-        }
+            => arbiter.Request(n);
 
         public void Set(ISubscription s)
-        {
-            arbiter.Set(s);
-        }
+            => arbiter.Set(s);
 
         sealed class PublisherTimeoutOther : ISubscriber<T>
         {
@@ -171,17 +165,17 @@ namespace RxAdvancedFlow.internals.publisher
 
         readonly Func<T, IPublisher<V>> itemDelay;
 
-        readonly IPublisher<T> other;
+        readonly IPublisher<T>? other;
 
         MultiArbiterStruct arbiter;
 
-        IDisposable d;
+        IDisposable? d;
 
         long sharedIndex;
 
         long localIndex;
 
-        public PublisherTimeoutSelector(ISubscriber<T> actual, Func<T, IPublisher<V>> itemDelay, IPublisher<T> other)
+        public PublisherTimeoutSelector(ISubscriber<T> actual, Func<T, IPublisher<V>> itemDelay, IPublisher<T>? other)
         {
             this.actual = actual;
             this.itemDelay = itemDelay;
@@ -273,7 +267,8 @@ namespace RxAdvancedFlow.internals.publisher
 
         void CancelOther()
         {
-            DisposableHelper.Terminate(ref this.d);
+            if(d != null)
+                DisposableHelper.Terminate(ref d);
         }
 
         public void Cancel()
