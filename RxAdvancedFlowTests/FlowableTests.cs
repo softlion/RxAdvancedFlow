@@ -1,11 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using RxAdvancedFlow;
-using RxAdvancedFlow.subscribers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RxAdvancedFlow.subscribers;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace RxAdvancedFlow.Tests
 {

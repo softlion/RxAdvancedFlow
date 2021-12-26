@@ -11,10 +11,10 @@ namespace RxAdvancedFlow.Tests
     [TestClass()]
     public class CompletableTests
     {
-        [TestMethod()]
-        public void ConcatTest()
-        {
-            Assert.Fail();
-        }
+        // [TestMethod()]
+        // public void ConcatTest()
+        // {
+        //     Assert.Fail();
+        // }
     }
 }
