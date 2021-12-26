@@ -16,7 +16,7 @@ $nugetVersion="$version$versionSuffix"
 
 cd $PSScriptRoot
 del *.nupkg
-& $msbuild "RxAdvancedFlow.sln" /restore /p:Configuration=Release /p:Platform="Any CPU" /p:Version="$version" /p:VersionSuffix="$versionSuffix" /p:Deterministic=false /p:PackageOutputPath="$PSScriptRoot" --% /t:Clean;Build
+& $msbuild "RxAdvancedFlow.sln" /restore /p:Configuration=Release /p:Platform="Any CPU" /p:Version="$version" /p:VersionSuffix="$versionSuffix" /p:Deterministic=false /p:PackageOutputPath="$PSScriptRoot" --% /t:Clean;Build;Pack
 if ($lastexitcode -ne 0) { exit $lastexitcode; }
 
 ####################

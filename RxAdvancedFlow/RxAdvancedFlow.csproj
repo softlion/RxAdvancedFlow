@@ -33,10 +33,10 @@
     <Authors>softlion, akarnokd, and many others</Authors>
     <Owners>Benjamin Mayrargue</Owners>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright></Copyright>
+    <Copyright>Softlion, akarnokd, ...</Copyright>
     <RepositoryUrl>https://github.com/softlion/RxAdvancedFlow</RepositoryUrl>
     <UseFullSemVerForNuGet>false</UseFullSemVerForNuGet>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageProjectUrl>https://github.com/softlion/RxAdvancedFlow</PackageProjectUrl>
     <PackageReleaseNotes>
